@@ -1,0 +1,88 @@
+<html>
+<head>
+<meta name="author" content="jfacey@liveareacx.com" />
+<meta http-equiv="content-type" content="text/html;charset=UTF-8" />
+<meta name="description" content="Awesome Description Here">
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+<script src="js/csvtoarray.js"/></script>
+<!-- Should put CSVToArray in its own JS-->
+<script>
+
+var inputData = ""; var csvData = ""; var output = "";
+var AttributeList = ""; var ObjTypeId = ""; var KeyAttribute = "";
+
+function processData(isRemote) {
+	 output = "";												//prepare JS vars
+	 inputData = "";
+	 csvData = "";
+	 AttributeList = "";
+	 ObjTypeId = "";
+	 KeyAttribute = "";
+	 IndexName = $('#IndexName').val();
+	 
+	if ($('#csvText').val() == ""){
+		alert("Local Data is empty");
+		return;
+	}	 
+	if (!isRemote) {
+		csvData = CSVToArray($('#csvText').val());				//Get CSV Data for remote --UNUSED
+	} else {
+		inputData = $.ajax({
+		 url:$("#location").val(),
+		 dataType: 'text'
+		 });
+		csvData = CSVToArray(inputData.response);				//parse pasted CSV data into JS Arrays
+	}
+	
+	if ($('#header').prop('checked') == true) { 			//put full header so we can copy directly into a file for import
+		output += '<?xml version="1.0" encoding="UTF-8"?>';
+		output += '<custom-objects xmlns="http://www.demandware.com/xml/impex/customobject/2006-10-31">';
+	}
+	AttributeList = $("#AttributeList").val().split(","); 		//seperate column names
+	ObjTypeId = $("#ObjTypeId").val();							//get obj type id
+	KeyAttribute = $("#KeyAttribute").val();
+	for (i=0;i<csvData.length;i++) {							//loop based on data and columns
+	   output += '<custom-object type-id="' + ObjTypeId + '" object-id="' + KeyAttribute + '">';
+	   for (z=0;z<AttributeList.length;z++) {
+			 output += '<object-attribute attribute-id="' + AttributeList[z] + '">' + csvData[i][z] + '</object-attribute>';
+	   }
+	   if (IndexName != "") {
+			output += '<object-attribute attribute-id="' + IndexName + '">' + (i+1) + '</object-attribute>';
+	   }
+	   output += '</custom-object>';							//close out object 	
+	}
+	if ($('#header').prop('checked') == true) {
+		output += '</custom-objects>';							//close out object file if selected
+	}
+	$("#output").text(output);									//display output on screen
+}
+</script>
+</head>
+<body>
+
+<b>CSV to XML Importer</b> : This file will read in <i>CSV data/file</i> and convert it to <i>Demandware Custom Object w/attributes</i><br /><br />
+<table>
+<tr>
+	<td valign="top">
+		Local Data:<br />
+		<textarea id="csvText" cols="50" rows="10"></textarea>
+	</td>
+	<td valign="top" >
+		<div style="margin-left:20px">
+			<b>Mapping:</b> <br />
+			ObjectTypeId: <input id="ObjTypeId" type="text" value="AgeGateObject" size="35"/><br />
+			KeyAttribute: <input id="KeyAttribute" type="text" value="CountryCode" size="35"/><br />
+			AttributeList: <input id="AttributeList" type="text" value="CountryName,Age,CountryCode" size="35"/><br />
+			IndexName (optional): <input id="IndexName" type="text" value="" size="35"/><br />
+		</div>
+	</td>
+</tr>
+</table>
+<input type="checkbox" id="header"> Include Xml Header/Footer<br />
+<input type="submit" onClick="processData(false)" value="Convert Local Data"><br />
+<hr />
+Output:<br />
+<textarea id="output" cols="50" rows="10"></textarea><hr />
+
+</body>
+</html>
